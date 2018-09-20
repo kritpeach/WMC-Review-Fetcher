@@ -49,6 +49,8 @@ const run = async () => {
         console.error(`[${new Date().toGMTString()}]` , e)
     }
 }
+console.log("Fetching review data every 6 hours")
+run()
 cron.schedule("0 */6 * * *", () => {
     run()
 });
