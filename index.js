@@ -40,9 +40,9 @@ const facebookReview = async (pageId) => {
 const run = async () => {
     try {
         const worldmedClinic = await googleReview("worldmed+clinic")
-        const wordmedHospital = await googleReview("worldmed+hospital")
+        const worldmedHospital = await googleReview("worldmed+hospital")
         const worldmedFacebook = await facebookReview("worldmedcenter")
-        const reviews = { wordmedHospital, worldmedClinic, worldmedFacebook }
+        const reviews = { worldmedHospital, worldmedClinic, worldmedFacebook }
         jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
         console.log(`[${new Date().toGMTString()}]` , "Saved review data successfully")
     } catch (e) {
