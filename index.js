@@ -1,6 +1,7 @@
 const fetch = require("node-fetch")
 const jsdom = require("jsdom")
 const jsonfile = require('jsonfile')
+const cron = require("node-cron");
 const { JSDOM } = jsdom
 
 const fetch_retry = async (url, options, n) => {
@@ -37,11 +38,17 @@ const facebookReview = async (pageId) => {
     return { rating, reviewCount }
 }
 const run = async () => {
-    const worldmedClinic = await googleReview("worldmed+clinic")
-    const wordmedHospital = await googleReview("worldmed+hospital")
-    const worldmedFacebook = await facebookReview("worldmedcenter")
-    const reviews = { wordmedHospital, worldmedClinic, worldmedFacebook }
-    jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews , date: new Date().toJSON()})
-    console.log(reviews)
+    try {
+        const worldmedClinic = await googleReview("worldmed+clinic")
+        const wordmedHospital = await googleReview("worldmed+hospital")
+        const worldmedFacebook = await facebookReview("worldmedcenter")
+        const reviews = { wordmedHospital, worldmedClinic, worldmedFacebook }
+        jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
+        console.log(`[${new Date().toGMTString()}]` , "Saved review data successfully")
+    } catch (e) {
+        console.error(`[${new Date().toGMTString()}]` , e)
+    }
 }
-run()
+cron.schedule("0 */6 * * *", () => {
+    run()
+});
