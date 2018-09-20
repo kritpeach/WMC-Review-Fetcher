@@ -41,7 +41,7 @@ const run = async () => {
     const wordmedHospital = await googleReview("worldmed+hospital")
     const worldmedFacebook = await facebookReview("worldmedcenter")
     const reviews = { wordmedHospital, worldmedClinic, worldmedFacebook }
-    jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews , timestamp: new Date().toJSON()})
+    jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews , date: new Date().toJSON()})
     console.log(reviews)
 }
 run()
