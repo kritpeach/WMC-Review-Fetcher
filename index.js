@@ -1,7 +1,8 @@
 const fetch = require("node-fetch")
 const jsdom = require("jsdom")
 const jsonfile = require('jsonfile')
-const cron = require("node-cron");
+const cron = require("node-cron")
+const puppeteer = require('puppeteer')
 const { JSDOM } = jsdom
 
 const fetch_retry = async (url, options, n) => {
@@ -37,20 +38,28 @@ const facebookReview = async (pageId) => {
     const reviewCount = parseInt(reviewLine[2].textContent.replace(/\D/g, ''))
     return { rating, reviewCount }
 }
+
+const googleMapReview = async (googlUrl) => {
+    const browser = await puppeteer.launch()
+    const page = await browser.newPage()
+    await page.goto(googlUrl)
+    const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
+    const reviewCount = await page.evaluate(() => parseInt(document.querySelector(".section-rating-line .widget-pane-link").textContent.replace(/\D/g, '')))
+    await browser.close();
+    return { rating, reviewCount }
+}
 const run = async () => {
     try {
-        const worldmedClinic = await googleReview("worldmed+clinic")
-        const worldmedHospital = await googleReview("worldmed+hospital")
+        const worldmedClinic = await googleMapReview("https://goo.gl/maps/yvbUrohuUou")
+        const worldmedHospital = await googleMapReview("https://goo.gl/maps/wk7e2P67XXJ2")
         const worldmedFacebook = await facebookReview("worldmedcenter")
         const reviews = { worldmedHospital, worldmedClinic, worldmedFacebook }
         jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
-        console.log(`[${new Date().toGMTString()}]` , "Saved review data successfully")
+        console.log(`[${new Date().toGMTString()}]`, "Saved review data successfully")
     } catch (e) {
-        console.error(`[${new Date().toGMTString()}]` , e)
+        console.error(`[${new Date().toGMTString()}]`, e)
     }
 }
 console.log("Fetching review data every 6 hours")
 run()
-cron.schedule("0 */6 * * *", () => {
-    run()
-});
+cron.schedule("0 */6 * * *", () => run())
