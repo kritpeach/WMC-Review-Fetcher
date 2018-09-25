@@ -40,7 +40,7 @@ const facebookReview = async (pageId) => {
 }
 
 const googleMapReview = async (googlUrl) => {
-    const browser = await puppeteer.launch()
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
     const page = await browser.newPage()
     await page.goto(googlUrl)
     const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
