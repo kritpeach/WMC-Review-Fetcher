@@ -43,6 +43,7 @@ const googleMapReview = async (googlUrl) => {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
     const page = await browser.newPage()
     await page.goto(googlUrl)
+    await page.screenshot({path: `/var/www/html/wp-content/uploads/wmc-review/${googlUrl.split("/")[4]}.png`});
     const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
     const reviewCount = await page.evaluate(() => parseInt(document.querySelector(".section-rating-line .widget-pane-link").textContent.replace(/\D/g, '')))
     await browser.close();
