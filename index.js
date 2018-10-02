@@ -31,7 +31,6 @@ const googleMapReview = async (googlUrl, browser) => {
     await page.screenshot({path: `/var/www/html/wp-content/uploads/wmc-review/${googlUrl.split("/")[4]}.png`});
     const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
     const reviewCount = await page.evaluate(() => parseInt(document.querySelector(".section-rating-line .widget-pane-link").textContent.replace(/\D/g, '')))
-    console.log({ rating, reviewCount })
     return { rating, reviewCount }
 }
 const run = async () => {
@@ -45,6 +44,7 @@ const run = async () => {
         const reviews = { worldmedHospital: results[1], worldmedClinic: results[0], worldmedFacebook: results[2] }
         jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
         console.log(`[${new Date().toGMTString()}]`, "Saved review data successfully")
+        console.log(reviews)
     } catch (e) {
         console.error(`[${new Date().toGMTString()}]`, e)
     } finally {
