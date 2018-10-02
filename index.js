@@ -14,21 +14,6 @@ const fetch_retry = async (url, options, n) => {
     }
 };
 
-const googleReview = async (q) => {
-    const google = await fetch(`https://www.google.com/search?q=${q}&gl=th&hl=en`, {
-        headers: {
-            "User-Agent": "Mozilla/5.0 (Linux; Android 8.0.0; Pixel 2 XL Build/OPD1.170816.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Mobile Safari/537.36"
-        }
-    })
-    const googleResponse = await google.text()
-    const dom = new JSDOM(googleResponse)
-    const starsLine = dom.window.document.querySelector("g-review-stars");
-    const { parentElement } = starsLine
-    const rating = parseFloat(parentElement.querySelector("span").textContent)
-    const reviewCount = parseInt(parentElement.querySelector("div").textContent.replace(/[{()}]/g, ''))
-    return { rating, reviewCount }
-}
-
 const facebookReview = async (pageId) => {
     const facebook = await fetch_retry(`https://en-gb.facebook.com/pg/${pageId}/reviews/`)
     const facebookResponse = await facebook.text()
@@ -39,26 +24,31 @@ const facebookReview = async (pageId) => {
     return { rating, reviewCount }
 }
 
-const googleMapReview = async (googlUrl) => {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
+const googleMapReview = async (googlUrl, browser) => {
     const page = await browser.newPage()
     await page.goto(googlUrl)
+    await page.waitForSelector(".section-star-display")
     await page.screenshot({path: `/var/www/html/wp-content/uploads/wmc-review/${googlUrl.split("/")[4]}.png`});
     const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
     const reviewCount = await page.evaluate(() => parseInt(document.querySelector(".section-rating-line .widget-pane-link").textContent.replace(/\D/g, '')))
-    await browser.close();
+    console.log({ rating, reviewCount })
     return { rating, reviewCount }
 }
 const run = async () => {
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
     try {
-        const worldmedClinic = await googleMapReview("https://goo.gl/maps/yvbUrohuUou")
-        const worldmedHospital = await googleMapReview("https://goo.gl/maps/wk7e2P67XXJ2")
-        const worldmedFacebook = await facebookReview("worldmedcenter")
-        const reviews = { worldmedHospital, worldmedClinic, worldmedFacebook }
+        const results = await Promise.all([
+            googleMapReview("https://goo.gl/maps/yvbUrohuUou", browser),
+            googleMapReview("https://goo.gl/maps/wk7e2P67XXJ2", browser),
+            facebookReview("worldmedcenter")
+        ])
+        const reviews = { worldmedHospital: results[1], worldmedClinic: results[0], worldmedFacebook: results[2] }
         jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
         console.log(`[${new Date().toGMTString()}]`, "Saved review data successfully")
     } catch (e) {
         console.error(`[${new Date().toGMTString()}]`, e)
+    } finally {
+        browser.close()
     }
 }
 console.log("Fetching review data every 6 hours")
