@@ -5,17 +5,17 @@ const cron = require("node-cron")
 const puppeteer = require('puppeteer')
 const { JSDOM } = jsdom
 
-const fetch_retry = async (url, options, n) => {
+const fetch_retry = async (url, n) => {
     try {
-        return await fetch(url, options)
+        return await fetch(url)
     } catch (err) {
         if (n === 1) throw err;
-        return await fetch_retry(url, options, n - 1);
+        return await fetch_retry(url, n - 1);
     }
 };
 
 const facebookReview = async (pageId) => {
-    const facebook = await fetch_retry(`https://en-gb.facebook.com/pg/${pageId}/reviews/`, null, 3)
+    const facebook = await fetch_retry(`https://en-gb.facebook.com/pg/${pageId}/reviews/`, 3)
     const facebookResponse = await facebook.text()
     const dom = new JSDOM(facebookResponse)
     const reviewLine = dom.window.document.querySelectorAll("div[role=complementary] > div > div");
