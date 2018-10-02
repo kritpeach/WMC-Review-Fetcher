@@ -15,7 +15,7 @@ const fetch_retry = async (url, options, n) => {
 };
 
 const facebookReview = async (pageId) => {
-    const facebook = await fetch_retry(`https://en-gb.facebook.com/pg/${pageId}/reviews/`)
+    const facebook = await fetch_retry(`https://en-gb.facebook.com/pg/${pageId}/reviews/`, null, 3)
     const facebookResponse = await facebook.text()
     const dom = new JSDOM(facebookResponse)
     const reviewLine = dom.window.document.querySelectorAll("div[role=complementary] > div > div");
