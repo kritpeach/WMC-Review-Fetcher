@@ -49,7 +49,7 @@ const fetchAndSaveReview = async (page) => {
 
 const run = async () => {
     console.log("Fetching review data every 6 hours")
-    const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox'] })
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
     const page = await browser.newPage()
     fetchAndSaveReview(page)
     cron.schedule("0 */6 * * *", () => fetchAndSaveReview(page))
