@@ -24,33 +24,35 @@ const facebookReview = async (pageId) => {
     return { rating, reviewCount }
 }
 
-const googleMapReview = async (googlUrl, browser) => {
-    const page = await browser.newPage()
+const googleMapReview = async (googlUrl, page) => {
     await page.goto(googlUrl)
     await page.waitForSelector(".section-star-display")
-    await page.screenshot({path: `/var/www/html/wp-content/uploads/wmc-review/${googlUrl.split("/")[4]}.png`});
+    await page.screenshot({ path: `/var/www/html/wp-content/uploads/wmc-review/${googlUrl.split("/")[4]}.png` });
     const rating = await page.evaluate(() => parseFloat(document.querySelector(".section-star-display").textContent))
     const reviewCount = await page.evaluate(() => parseInt(document.querySelector(".section-rating-line .widget-pane-link").textContent.replace(/\D/g, '')))
     return { rating, reviewCount }
 }
-const run = async () => {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] })
+const fetchAndSaveReview = async (page) => {
     try {
-        const results = await Promise.all([
-            googleMapReview("https://goo.gl/maps/yvbUrohuUou", browser),
-            googleMapReview("https://goo.gl/maps/wk7e2P67XXJ2", browser),
-            facebookReview("worldmedcenter")
-        ])
-        const reviews = { worldmedHospital: results[1], worldmedClinic: results[0], worldmedFacebook: results[2] }
+        const worldmedClinic = await googleMapReview("https://goo.gl/maps/yvbUrohuUou", page)
+        const worldmedHospital = await googleMapReview("https://goo.gl/maps/wk7e2P67XXJ2", page)
+        const worldmedFacebook = await facebookReview("worldmedcenter")
+        const reviews = { worldmedHospital, worldmedClinic, worldmedFacebook }
         jsonfile.writeFileSync("/var/www/html/wp-content/uploads/wmc-review/review.json", { reviews, date: new Date().toJSON() })
         console.log(`[${new Date().toGMTString()}]`, "Saved review data successfully")
         console.log(reviews)
     } catch (e) {
+        await page.screenshot({ path: `/var/www/html/wp-content/uploads/wmc-review/error_${googlUrl.split("/")[4]}.png` })
         console.error(`[${new Date().toGMTString()}]`, e)
-    } finally {
-        browser.close()
     }
 }
-console.log("Fetching review data every 6 hours")
+
+const run = async () => {
+    console.log("Fetching review data every 6 hours")
+    const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox'] })
+    const page = await browser.newPage()
+    fetchAndSaveReview(page)
+    cron.schedule("0 */6 * * *", () => fetchAndSaveReview(page))
+}
+
 run()
-cron.schedule("0 */6 * * *", () => run())
